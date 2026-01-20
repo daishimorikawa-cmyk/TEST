@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ドーパミンと強化学習のしくみ 〜若者が気づくための説明資料〜</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --accent: #f97316;
+      --good: #16a34a;
+      --warn: #dc2626;
+      --card: #ffffff;
+      --line: #e5e7eb;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.7;
+    }
+    header {
+      background: linear-gradient(120deg, #1d4ed8, #38bdf8);
+      color: #fff;
+      padding: 48px 16px 64px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: clamp(1.8rem, 3vw, 2.8rem);
+      margin: 0 0 8px;
+    }
+    header p {
+      max-width: 760px;
+      margin: 0 auto;
+      font-size: 1.05rem;
+      opacity: 0.95;
+    }
+    main {
+      max-width: 1100px;
+      margin: -40px auto 48px;
+      padding: 0 16px 40px;
+    }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 28px;
+      margin: 24px 0;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+    .section h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+    }
+    .grid {
+      display: grid;
+      gap: 20px;
+    }
+    .grid-2 {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+    .grid-3 {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-weight: 600;
+      background: #e0e7ff;
+      color: #3730a3;
+      margin-bottom: 8px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      background: #f9fafb;
+    }
+    .callout {
+      border-left: 6px solid var(--accent);
+      background: #fff7ed;
+      padding: 16px;
+      border-radius: 12px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #eef2ff;
+      font-weight: 600;
+      color: #3730a3;
+      margin: 4px 6px 0 0;
+    }
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dot.good { background: var(--good); }
+    .dot.warn { background: var(--warn); }
+    .dot.primary { background: var(--primary); }
+    .flow {
+      background: #eef2ff;
+      border-radius: 16px;
+      padding: 18px;
+      font-family: "SFMono-Regular", ui-monospace, monospace;
+    }
+    .steps {
+      display: grid;
+      gap: 12px;
+    }
+    .step {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px dashed #c7d2fe;
+    }
+    .step strong {
+      font-size: 1.1rem;
+      color: var(--primary);
+      min-width: 32px;
+    }
+    .footer-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 40px;
+    }
+    svg {
+      width: 100%;
+      height: auto;
+    }
+    .svg-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    @media (max-width: 700px) {
+      header {
+        padding: 36px 16px 56px;
+      }
+      .section {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ドーパミンと強化学習のしくみ</h1>
+    <p>
+      若者が「なぜ引っ張られるのか」を感覚で理解できるように、
+      予測誤差・報酬系・依存の流れを図解中心でまとめました。
+    </p>
+  </header>
+
+  <main>
+    <section class="section">
+      <span class="badge">最初にここだけ</span>
+      <h2>ドーパミンは「快楽物質」ではなく、学習の信号</h2>
+      <div class="grid grid-2">
+        <div>
+          <p>
+            ドーパミンは「気持ちいいから出る」のではなく、
+            <strong>「予想より良かった/悪かった」を知らせる学習信号</strong>として働きます。
+          </p>
+          <div class="legend">
+            <span><i class="dot good"></i>予想より良い → 強化</span>
+            <span><i class="dot warn"></i>予想より悪い → 方向転換</span>
+            <span><i class="dot primary"></i>予想どおり → 変化小</span>
+          </div>
+        </div>
+        <div class="svg-card">
+          <svg viewBox="0 0 560 260" aria-label="予測誤差のイメージ">
+            <rect x="20" y="30" width="520" height="200" rx="20" fill="#f1f5f9" />
+            <text x="40" y="70" font-size="18" fill="#334155">脳の中の予想ライン</text>
+            <line x1="60" y1="140" x2="500" y2="140" stroke="#94a3b8" stroke-width="4" />
+            <circle cx="150" cy="120" r="18" fill="#22c55e" />
+            <text x="120" y="105" font-size="14" fill="#16a34a">予想より良い</text>
+            <circle cx="300" cy="140" r="18" fill="#3b82f6" />
+            <text x="270" y="175" font-size="14" fill="#2563eb">予想どおり</text>
+            <circle cx="450" cy="170" r="18" fill="#ef4444" />
+            <text x="410" y="200" font-size="14" fill="#dc2626">予想より悪い</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>強化学習が回る流れ（図で一発）</h2>
+      <div class="grid grid-2">
+        <div class="flow">
+          行動
+          ↓
+          結果
+          ↓
+          予測誤差
+          ↓
+          ドーパミン信号
+          ↓
+          「次もやる」更新
+        </div>
+        <div class="svg-card">
+          <svg viewBox="0 0 560 280" aria-label="強化学習の循環">
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L6,3 z" fill="#2563eb" />
+              </marker>
+            </defs>
+            <circle cx="120" cy="80" r="46" fill="#dbeafe" />
+            <text x="95" y="86" font-size="16">行動</text>
+            <circle cx="320" cy="80" r="46" fill="#fde68a" />
+            <text x="288" y="86" font-size="16">結果</text>
+            <circle cx="220" cy="210" r="60" fill="#fecaca" />
+            <text x="170" y="215" font-size="16">予測誤差</text>
+            <line x1="166" y1="80" x2="274" y2="80" stroke="#2563eb" stroke-width="4" marker-end="url(#arrow)" />
+            <line x1="300" y1="120" x2="245" y2="168" stroke="#2563eb" stroke-width="4" marker-end="url(#arrow)" />
+            <line x1="190" y1="175" x2="135" y2="120" stroke="#2563eb" stroke-width="4" marker-end="url(#arrow)" />
+            <text x="350" y="170" font-size="14" fill="#475569">学習が強化される</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>なぜ「現代社会」は中毒になりやすいのか</h2>
+      <div class="grid grid-3">
+        <div class="card">
+          <h3>即時性</h3>
+          <p>行動の直後に結果が返るほど学習が強化される。</p>
+          <div class="svg-card">
+            <svg viewBox="0 0 200 160" aria-label="即時性のイメージ">
+              <rect x="20" y="20" width="160" height="120" rx="16" fill="#e0f2fe" />
+              <text x="55" y="60" font-size="14" fill="#0369a1">タップ</text>
+              <path d="M100 70 L140 110" stroke="#0ea5e9" stroke-width="6" />
+              <circle cx="150" cy="120" r="16" fill="#38bdf8" />
+              <text x="132" y="125" font-size="12">反応</text>
+            </svg>
+          </div>
+        </div>
+        <div class="card">
+          <h3>不確実性</h3>
+          <p>たまに大当たりがあるほど「次もやる」が強くなる。</p>
+          <div class="svg-card">
+            <svg viewBox="0 0 200 160" aria-label="不確実性のイメージ">
+              <rect x="18" y="20" width="164" height="120" rx="16" fill="#fef3c7" />
+              <circle cx="60" cy="80" r="16" fill="#facc15" />
+              <circle cx="100" cy="80" r="16" fill="#fde047" />
+              <circle cx="140" cy="80" r="16" fill="#f97316" />
+              <text x="40" y="120" font-size="12" fill="#b45309">たまに大当たり</text>
+            </svg>
+          </div>
+        </div>
+        <div class="card">
+          <h3>新奇性</h3>
+          <p>新しい情報は「もっと知りたい」を刺激する。</p>
+          <div class="svg-card">
+            <svg viewBox="0 0 200 160" aria-label="新奇性のイメージ">
+              <rect x="20" y="20" width="160" height="120" rx="16" fill="#ede9fe" />
+              <polygon points="100,40 120,80 80,80" fill="#8b5cf6" />
+              <circle cx="70" cy="110" r="14" fill="#a78bfa" />
+              <circle cx="130" cy="110" r="14" fill="#c4b5fd" />
+              <text x="60" y="140" font-size="12" fill="#6d28d9">新しい刺激</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="callout" style="margin-top: 20px;">
+        <strong>結論：</strong> 現代のサービスは「速い・濃い・無限・不確実」を
+        組み合わせることで、強化学習が過剰に回りやすい。
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>若者に気づいてもらうための伝え方</h2>
+      <div class="grid grid-2">
+        <div>
+          <div class="pill">ポイント1</div>
+          <p><strong>「意志の弱さ」ではなく「脳の仕様」</strong>だと伝える。</p>
+          <div class="pill">ポイント2</div>
+          <p><strong>説教よりも短い実験</strong>で体感させる。</p>
+          <div class="pill">ポイント3</div>
+          <p>スマホを敵にせず<strong>仕組み（設計）</strong>を話題にする。</p>
+        </div>
+        <div class="svg-card">
+          <svg viewBox="0 0 560 260" aria-label="気づきを促すイメージ">
+            <rect x="30" y="30" width="200" height="200" rx="24" fill="#e2e8f0" />
+            <circle cx="130" cy="110" r="40" fill="#94a3b8" />
+            <text x="92" y="170" font-size="14" fill="#475569">本人の感覚</text>
+            <rect x="320" y="40" width="200" height="180" rx="24" fill="#dcfce7" />
+            <circle cx="420" cy="110" r="44" fill="#22c55e" />
+            <text x="350" y="180" font-size="14" fill="#15803d">気づきの芽</text>
+            <line x1="230" y1="130" x2="320" y2="130" stroke="#16a34a" stroke-width="6" marker-end="url(#arrow)" />
+            <text x="240" y="110" font-size="12" fill="#16a34a">体験</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>おすすめの「3日間ミニ実験」</h2>
+      <div class="steps">
+        <div class="step">
+          <strong>1</strong>
+          <div>
+            <p><strong>通知を全部オフ</strong>にする。</p>
+            <p class="muted">まずは「合図」を消して反射を止める。</p>
+          </div>
+        </div>
+        <div class="step">
+          <strong>2</strong>
+          <div>
+            <p><strong>使う時間を1日2回だけ</strong>に固定。</p>
+            <p class="muted">不確実性を減らし、学習ループを弱める。</p>
+          </div>
+        </div>
+        <div class="step">
+          <strong>3</strong>
+          <div>
+            <p><strong>3日後に「自分の変化」を聞く</strong>。</p>
+            <p class="muted">結論を押し付けず、本人の気づきを引き出す。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>「依存を防ぐ設計」チェックリスト</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>即時性を遅らせる</h3>
+          <ul>
+            <li>ログアウト状態を維持</li>
+            <li>パスコードや待ち時間を入れる</li>
+            <li>購入は24時間ルール</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>不確実性を減らす</h3>
+          <ul>
+            <li>無限スクロールをやめる</li>
+            <li>視聴時間を固定する</li>
+            <li>「終わり」を作る</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>トリガーを消す</h3>
+          <ul>
+            <li>通知・バッジをオフ</li>
+            <li>ホーム画面から外す</li>
+            <li>使う場所を変える</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>遅い報酬を見える化</h3>
+          <ul>
+            <li>進捗をチェック表にする</li>
+            <li>小さな達成を記録</li>
+            <li>途中報酬を設計する</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>まとめ（1枚で伝えるキーメッセージ）</h2>
+      <div class="callout">
+        <ul>
+          <li>ドーパミンは「学習の信号」であり、誰でも反応する。</li>
+          <li>中毒は意志の問題ではなく、強化学習が暴走した結果。</li>
+          <li>最強の対策は「我慢」ではなく「環境設計」。</li>
+          <li>若者には、短い体験で「自分の変化」に気づかせる。</li>
+        </ul>
+      </div>
+    </section>
+
+    <p class="footer-note">非公開資料 — 配布・説明用に自由に編集してご利用ください。</p>
+  </main>
+</body>
+</html>
